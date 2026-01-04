@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味单词大冒险 Fun Word Adventure</title>
+    <style>
+        :root {
+            --primary-color: #FF9F1C;
+            --secondary-color: #2EC4B6;
+            --accent-color: #E71D36;
+            --background-color: #CBF3F0;
+            --card-bg: #FFFFFF;
+            --text-color: #011627;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--secondary-color);
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: white;
+            position: relative;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2em;
+            text-shadow: 2px 2px 0px var(--accent-color);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Menu Styles */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+
+        .unit-btn {
+            background-color: var(--card-bg);
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            text-align: center;
+            color: var(--text-color);
+            box-shadow: 0 4px 0 var(--primary-color);
+        }
+
+        .unit-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .unit-btn:hover {
+            background-color: #FFF3E0;
+        }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            background-color: var(--card-bg);
+            border: 4px solid var(--secondary-color);
+        }
+
+        .card-front {
+            z-index: 2;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background-color: #E0F7FA;
+            border-color: var(--primary-color);
+        }
+
+        .word-text {
+            font-size: 3em;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .meaning-text {
+            font-size: 2em;
+            color: var(--text-color);
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-secondary { background-color: var(--secondary-color); }
+        .btn-accent { background-color: var(--accent-color); }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* Quiz Styles */
+        .quiz-container {
+            width: 100%;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .quiz-question {
+            font-size: 2.5em;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            font-size: 1.2em;
+            background-color: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background-color: #e6e6e6;
+            transform: scale(1.02);
+        }
+
+        .option-btn.correct {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #45a049;
+        }
+
+        .option-btn.wrong {
+            background-color: #f44336;
+            color: white;
+            border-color: #d32f2f;
+        }
+
+        .score-display {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        /* Views */
+        .view { display: none; width: 100%; }
+        .view.active { display: flex; flex-direction: column; align-items: center; }
+
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background: none;
+            border: 2px solid white;
+            color: white;
+            font-size: 1em;
+            padding: 5px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Animations */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .pop-anim {
+            animation: pop 0.3s ease-in-out;
+        }
+
+        /* Shake Animation */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            50% { transform: translateX(10px) rotate(5deg); }
+            75% { transform: translateX(-10px) rotate(-5deg); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake-anim {
+            animation: shake 0.5s ease-in-out;
+            background-color: #ffcccc !important; /* Reddish tint */
+        }
+
+        /* Fireworks Canvas */
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .speak-btn {
+            background: none;
+            border: none;
+            font-size: 0.6em; /* Relative to word-text font size */
+            cursor: pointer;
+            margin-left: 10px;
+            vertical-align: middle;
+            transition: transform 0.2s;
+        }
+        .speak-btn:hover {
+            transform: scale(1.2);
+        }
+        .speak-btn:active {
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body>
+<canvas id="fireworks-canvas"></canvas>
+
+<header>
+    <button id="home-btn" class="back-btn" style="display: none;" onclick="goHome()">🏠 首页</button>
+    <h1>🌟 趣味单词大冒险 🌟</h1>
+</header>
+
+<div class="container">
+    <!-- Menu View -->
+    <div id="menu-view" class="view active">
+        <h2>请选择一个单元开始冒险！</h2>
+        <div id="unit-list" class="menu-grid">
+            <!-- Units will be generated here -->
+        </div>
+    </div>
+
+    <!-- Mode Selection View (Sub-menu) -->
+    <div id="mode-view" class="view">
+        <h2 id="selected-unit-title">Unit 1</h2>
+        <div class="menu-grid" style="grid-template-columns: 1fr;">
+            <button class="unit-btn" onclick="startFlashcards()" style="border-color: var(--secondary-color);">📖 单词卡片 (Learn)</button>
+            <button class="unit-btn" onclick="startQuiz()" style="border-color: var(--accent-color);">🎮 挑战游戏 (Game)</button>
+        </div>
+    </div>
+
+    <!-- Flashcard View -->
+    <div id="flashcard-view" class="view">
+        <div class="progress-bar"><div id="fc-progress" class="progress-fill"></div></div>
+        <div class="flashcard-container" onclick="flipCard()">
+            <div class="flashcard" id="card">
+                <div class="card-face card-front">
+                    <div class="word-text">
+                        <span id="fc-word">Hello</span>
+                        <button class="speak-btn" onclick="event.stopPropagation(); speakWord();" title="听发音">🔊</button>
+                    </div>
+                    <div style="font-size: 1.2em; color: #666;">(点击查看中文)</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="meaning-text" id="fc-meaning">你好</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="prevCard()">⬅️ 上一个</button>
+            <button class="btn btn-secondary" onclick="nextCard()">下一个 ➡️</button>
+        </div>
+    </div>
+
+    <!-- Quiz View -->
+    <div id="quiz-view" class="view">
+        <div class="score-display">得分: <span id="score">0</span></div>
+        <div class="progress-bar"><div id="quiz-progress" class="progress-fill"></div></div>
+        <div class="quiz-container">
+            <div class="quiz-question" id="quiz-question">Question?</div>
+            <div class="options-grid" id="quiz-options">
+                <!-- Options generated here -->
+            </div>
+        </div>
+        <div id="quiz-feedback" style="margin-top: 20px; font-size: 1.5em; height: 1.5em;"></div>
+        <div class="controls" style="display: none;" id="quiz-next-btn-container">
+            <button class="btn btn-secondary" onclick="nextQuestion()">下一题 ➡️</button>
+        </div>
+    </div>
+    
+    <!-- Result View -->
+    <div id="result-view" class="view">
+        <h2 style="font-size: 3em;">🎉 挑战完成! 🎉</h2>
+        <div style="font-size: 2em; margin: 20px;">最终得分: <span id="final-score" style="color: var(--accent-color); font-weight: bold;"></span></div>
+        <div id="stars" style="font-size: 3em;">⭐⭐⭐</div>
+        <button class="btn btn-primary" onclick="goHome()" style="margin-top: 30px;">返回首页</button>
+    </div>
+</div>
+
+<script>
+    // --- Data ---
+    const vocabulary = {
+        "Unit 1": [
+            { word: "hello", meaning: "你好" },
+            { word: "nice", meaning: "令人愉快的" },
+            { word: "to", meaning: "(用于动词、名词等后)使意思完整" },
+            { word: "meet", meaning: "认识，结识" },
+            { word: "you", meaning: "你" },
+            { word: "hi", meaning: "你好，嗨" },
+            { word: "let's", meaning: "让我们......吧 (let us)" },
+            { word: "play", meaning: "玩，玩耍" },
+            { word: "OK", meaning: "行，可以" },
+            { word: "be", meaning: "是;成为" },
+            { word: "friend", meaning: "朋友" },
+            { word: "I", meaning: "我" },
+            { word: "my", meaning: "我的" },
+            { word: "name", meaning: "名字" }
+        ],
+        "Unit 2": [
+            { word: "one", meaning: "一" },
+            { word: "little", meaning: "小的" },
+            { word: "two", meaning: "二" },
+            { word: "three", meaning: "三" },
+            { word: "bird", meaning: "鸟" },
+            { word: "four", meaning: "四" },
+            { word: "five", meaning: "五" },
+            { word: "six", meaning: "六" },
+            { word: "in", meaning: "在......内;排列成......形状" },
+            { word: "a/an", meaning: "一(个)" },
+            { word: "line", meaning: "排，列,行" },
+            { word: "the", meaning: "(特指)这，那" },
+            { word: "sky", meaning: "天空" },
+            { word: "take", meaning: "拍摄" },
+            { word: "photo", meaning: "照片，相片" },
+            { word: "together", meaning: "一起，共同" }
+        ],
+        "Unit 3": [
+            { word: "red", meaning: "红色" },
+            { word: "like", meaning: "喜欢，喜爱" },
+            { word: "blue", meaning: "蓝色" },
+            { word: "yellow", meaning: "黄色" },
+            { word: "green", meaning: "绿色" },
+            { word: "orange", meaning: "橘黄色，橙色" },
+            { word: "colourful", meaning: "色彩丰富的" },
+            { word: "picture", meaning: "画,图画" },
+            { word: "what", meaning: "什么" },
+            { word: "colour", meaning: "颜色" },
+            { word: "it", meaning: "它，这，那" },
+            { word: "look", meaning: "瞧" },
+            { word: "hooray", meaning: "好哇(表示高兴)" }
+        ],
+        "Unit 4": [
+            { word: "pencil", meaning: "铅笔" },
+            { word: "ruler", meaning: "尺子，直尺" },
+            { word: "all", meaning: "全部，所有" },
+            { word: "schoolbag", meaning: "书包" },
+            { word: "eraser", meaning: "橡皮" },
+            { word: "book", meaning: "书，书籍" },
+            { word: "share", meaning: "共享;共用" },
+            { word: "oh", meaning: "啊，哎呀" },
+            { word: "pencil case", meaning: "笔袋;铅笔盒" },
+            { word: "and", meaning: "和，与" },
+            { word: "English", meaning: "英语" },
+            { word: "don't", meaning: "不要 (do not)" },
+            { word: "worry", meaning: "担心;发愁" },
+            { word: "here", meaning: "在这里;给你" },
+            { word: "thank", meaning: "感谢" }
+        ],
+        "Unit 5": [
+            { word: "good morning", meaning: "早上好" },
+            { word: "teacher", meaning: "教师，老师" },
+            { word: "this", meaning: "这，这个" },
+            { word: "our", meaning: "我们的" },
+            { word: "classroom", meaning: "教室" },
+            { word: "blackboard", meaning: "黑板" },
+            { word: "desk", meaning: "书桌" },
+            { word: "chair", meaning: "椅子" },
+            { word: "clean", meaning: "弄干净，清理" },
+            { word: "over", meaning: "结束的" },
+            { word: "floor", meaning: "地板，地面" },
+            { word: "window", meaning: "窗户" },
+            { word: "door", meaning: "门" }
+        ],
+        "Names": [
+            { word: "Tom", meaning: "汤姆" },
+            { word: "Max", meaning: "马克斯" }
+        ]
+    };
+
+    // --- State ---
+    let currentUnit = null;
+    let currentList = [];
+    let currentIndex = 0;
+    let score = 0;
+    let quizMode = false; // false for English->Chinese, true for Chinese->English? We'll mix it or stick to one.
+    
+    // --- Initialization ---
+    function init() {
+        const unitList = document.getElementById('unit-list');
+        for (const unit in vocabulary) {
+            const btn = document.createElement('button');
+            btn.className = 'unit-btn';
+            btn.textContent = unit;
+            btn.onclick = () => selectUnit(unit);
+            unitList.appendChild(btn);
+        }
+    }
+    
+    // --- TTS ---
+    function speakWord() {
+        const word = document.getElementById('fc-word').textContent;
+        speak(word);
+    }
+
+    function speak(text, lang = 'en-US') {
+        if ('speechSynthesis' in window) {
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang; 
+            utterance.rate = lang === 'zh-CN' ? 1.0 : 0.8; 
+            utterance.pitch = 1.1; // Slightly higher pitch for friendlier tone
+            window.speechSynthesis.speak(utterance);
+        } else {
+            console.log("Browser does not support speech synthesis");
+        }
+    }
+
+    // --- Navigation ---
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        const homeBtn = document.getElementById('home-btn');
+        if (viewId === 'menu-view') {
+            homeBtn.style.display = 'none';
+        } else {
+            homeBtn.style.display = 'block';
+        }
+    }
+
+    function goHome() {
+        showView('menu-view');
+        currentUnit = null;
+    }
+
+    function selectUnit(unit) {
+        currentUnit = unit;
+        currentList = vocabulary[unit];
+        document.getElementById('selected-unit-title').textContent = unit;
+        showView('mode-view');
+    }
+
+    // --- Flashcard Logic ---
+    function startFlashcards() {
+        currentIndex = 0;
+        showView('flashcard-view');
+        updateCard();
+    }
+
+    function updateCard() {
+        const item = currentList[currentIndex];
+        document.getElementById('fc-word').textContent = item.word;
+        document.getElementById('fc-meaning').textContent = item.meaning;
+        document.getElementById('card').classList.remove('flipped');
+        
+        // Update Progress
+        const percent = ((currentIndex + 1) / currentList.length) * 100;
+        document.getElementById('fc-progress').style.width = percent + '%';
+    }
+
+    function flipCard() {
+        document.getElementById('card').classList.toggle('flipped');
+    }
+
+    function nextCard() {
+        if (currentIndex < currentList.length - 1) {
+            currentIndex++;
+            updateCard();
+        } else {
+            // Maybe loop or finish
+            alert("恭喜！你已经看完了这个单元所有的单词！");
+            currentIndex = 0;
+            updateCard();
+        }
+    }
+
+    function prevCard() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateCard();
+        }
+    }
+
+    // --- Quiz Logic ---
+    function startQuiz() {
+        // Shuffle list for quiz
+        currentList = [...vocabulary[currentUnit]].sort(() => Math.random() - 0.5);
+        currentIndex = 0;
+        score = 0;
+        showView('quiz-view');
+        updateQuiz();
+    }
+
+    function updateQuiz() {
+        if (currentIndex >= currentList.length) {
+            finishQuiz();
+            return;
+        }
+
+        const item = currentList[currentIndex];
+        document.getElementById('score').textContent = score;
+        document.getElementById('quiz-feedback').textContent = '';
+        document.getElementById('quiz-next-btn-container').style.display = 'none';
+        
+        // Progress
+        const percent = (currentIndex / currentList.length) * 100;
+        document.getElementById('quiz-progress').style.width = percent + '%';
+
+        // 50% chance: English -> Chinese OR Chinese -> English
+        const isEngToChi = Math.random() > 0.5;
+        
+        let questionText, correctText, wrongSource;
+        
+        if (isEngToChi) {
+            questionText = item.word;
+            correctText = item.meaning;
+            wrongSource = 'meaning';
+            // Add speaker button for English questions
+            document.getElementById('quiz-question').innerHTML = `
+                ${questionText} 
+                <button class="speak-btn" onclick="speak('${questionText.replace(/'/g, "\\'")}')">🔊</button>
+            `;
+            // Auto-speak English questions
+            speak(questionText);
+        } else {
+            questionText = item.meaning;
+            correctText = item.word;
+            wrongSource = 'word';
+            document.getElementById('quiz-question').textContent = questionText;
+        }
+        
+        // Generate options
+        const optionsContainer = document.getElementById('quiz-options');
+        optionsContainer.innerHTML = '';
+        
+        // Get 3 random wrong answers from other words in the SAME unit or ALL units
+        // Using all units gives more variety
+        let allWords = [];
+        for (let u in vocabulary) {
+            allWords = allWords.concat(vocabulary[u]);
+        }
+        
+        const wrongOptions = allWords
+            .filter(w => w[wrongSource] !== correctText)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 3)
+            .map(w => w[wrongSource]);
+            
+        const options = [...wrongOptions, correctText].sort(() => Math.random() - 0.5);
+        
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = () => checkAnswer(btn, opt === correctText);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(btn, isCorrect) {
+        // Disable all buttons
+        const opts = document.querySelectorAll('.option-btn');
+        opts.forEach(o => o.disabled = true);
+
+        const correctPhrases = ["你真棒!", "太厉害了!", "答对了!", "好样的!", "Excellent!"];
+        const wrongPhrases = ["没关系，再试一次!", "加油哦!", "再想一想!", "不要灰心!", "Try again!"];
+
+        if (isCorrect) {
+            btn.classList.add('correct');
+            document.getElementById('quiz-feedback').textContent = '✅ 答对了! Great Job!';
+            document.getElementById('quiz-feedback').style.color = 'green';
+            score += 10;
+            playSound('correct');
+            fireworks(); // Trigger fireworks
+            
+            // Voice feedback
+            const msg = correctPhrases[Math.floor(Math.random() * correctPhrases.length)];
+            speak(msg, 'zh-CN');
+        } else {
+            btn.classList.add('wrong');
+            btn.classList.add('shake-anim'); // Trigger shake
+            // Remove animation class after it finishes so it can be triggered again if needed
+            setTimeout(() => btn.classList.remove('shake-anim'), 500);
+            
+             document.getElementById('quiz-feedback').textContent = '❌ 哎呀，再接再厉!';
+             document.getElementById('quiz-feedback').style.color = 'red';
+             playSound('wrong');
+             
+             // Voice feedback
+             const msg = wrongPhrases[Math.floor(Math.random() * wrongPhrases.length)];
+             speak(msg, 'zh-CN');
+        }
+        
+        document.getElementById('score').textContent = score;
+        document.getElementById('quiz-next-btn-container').style.display = 'flex';
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        updateQuiz();
+    }
+
+    function finishQuiz() {
+        showView('result-view');
+        document.getElementById('final-score').textContent = score;
+        
+        const maxScore = currentList.length * 10;
+        const ratio = score / maxScore;
+        let stars = '';
+        if (ratio >= 0.9) stars = '⭐⭐⭐ (太棒了!)';
+        else if (ratio >= 0.6) stars = '⭐⭐ (不错哦!)';
+        else stars = '⭐ (加油!)';
+        
+        document.getElementById('stars').textContent = stars;
+    }
+    
+    // Simple Audio Context for effects (optional, browser policy might block auto-play but click triggers are fine)
+    // For simplicity, we won't use external audio files, maybe just visual feedback is enough.
+    function playSound(type) {
+        // Placeholder for sound effects
+    }
+
+    // --- Effects ---
+    const canvas = document.getElementById('fireworks-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animationId = null;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function fireworks() {
+        // Launch some particles
+        const particleCount = 100;
+        const x = window.innerWidth / 2; // Center burst, or could be random
+        const y = window.innerHeight / 2;
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(createParticle(x, y));
+        }
+
+        if (!animationId) {
+            animateParticles();
+        }
+    }
+
+    function createParticle(x, y) {
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 5 + Math.random() * 5;
+        const colors = ['#FF9F1C', '#2EC4B6', '#E71D36', '#FFD700', '#33CC33'];
+        return {
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * velocity,
+            vy: Math.sin(angle) * velocity,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1,
+            size: Math.random() * 5 + 2
+        };
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach((p, index) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // Gravity
+            p.alpha -= 0.02; // Fade out
+
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (p.alpha <= 0) {
+                particles.splice(index, 1);
+            }
+        });
+
+        if (particles.length > 0) {
+            animationId = requestAnimationFrame(animateParticles);
+        } else {
+            animationId = null;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    // Start
+    init();
+
+</script>
+
+</body>
+</html>
