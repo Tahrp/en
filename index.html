@@ -496,6 +496,33 @@
     }
     
     // --- TTS ---
+    let preferredVoice = null;
+
+    function loadVoices() {
+        const voices = window.speechSynthesis.getVoices();
+        // Priority list for English voices (Google US, Microsoft Zira, Samantha, etc.)
+        const voicePriorities = [
+            'Google US English',
+            'Microsoft Zira',
+            'Samantha',
+            'Alex',
+            'Daniel'
+        ];
+
+        for (const name of voicePriorities) {
+            preferredVoice = voices.find(v => v.name.includes(name));
+            if (preferredVoice) break;
+        }
+    }
+
+    // Initialize voices
+    if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        loadVoices();
+    }
+
     function speakWord() {
         const word = document.getElementById('fc-word').textContent;
         speak(word);
@@ -505,20 +532,50 @@
         if ('speechSynthesis' in window) {
             // Cancel any ongoing speech
             window.speechSynthesis.cancel();
+        }
+
+        // For English words, try to use online high-quality audio first
+        if (lang === 'en-US') {
+            // Handle special cases for online audio query if needed
+            // For "a/an", just read "a" to avoid confusion or split? 
+            // The dictionary usually handles "hello" well. 
+            // "I" -> "eye" fix is for TTS, but online audio "I" should be fine.
             
+            // Clean text for URL (remove special chars if any, though encodeURIComponent handles it)
+            // But we might want to keep the "I" fix if we fallback to TTS
+            
+            const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=2`;
+            const audio = new Audio(audioUrl);
+            
+            audio.play().catch(e => {
+                console.log("Online audio failed, falling back to TTS", e);
+                speakBrowserTTS(text, lang);
+            });
+        } else {
+            // For Chinese (feedback), use browser TTS
+            speakBrowserTTS(text, lang);
+        }
+    }
+
+    function speakBrowserTTS(text, lang) {
+        if ('speechSynthesis' in window) {
             // Fix for "I" being read as "Capital I"
             let textToSpeak = text;
             if (lang === 'en-US' && text === 'I') {
-                textToSpeak = 'eye'; // Homophone "eye" sounds like "I" but avoids "Capital I" description
+                textToSpeak = 'eye'; 
             }
             
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
             utterance.lang = lang; 
+            
+            // Use preferred voice if available and language matches
+            if (lang === 'en-US' && preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+
             utterance.rate = lang === 'zh-CN' ? 1.0 : 0.8; 
-            utterance.pitch = 1.1; // Slightly higher pitch for friendlier tone
+            utterance.pitch = 1.1; 
             window.speechSynthesis.speak(utterance);
-        } else {
-            console.log("Browser does not support speech synthesis");
         }
     }
 
