@@ -658,12 +658,12 @@
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.textContent = opt;
-            btn.onclick = () => checkAnswer(btn, opt === correctText);
+            btn.onclick = () => checkAnswer(btn, opt === correctText, correctText);
             optionsContainer.appendChild(btn);
         });
     }
 
-    function checkAnswer(btn, isCorrect) {
+    function checkAnswer(btn, isCorrect, correctText) {
         // Disable all buttons
         const opts = document.querySelectorAll('.option-btn');
         opts.forEach(o => o.disabled = true);
@@ -688,7 +688,14 @@
             // Remove animation class after it finishes so it can be triggered again if needed
             setTimeout(() => btn.classList.remove('shake-anim'), 500);
             
-             document.getElementById('quiz-feedback').textContent = '❌ 哎呀，再接再厉!';
+             // Highlight the correct answer
+             opts.forEach(o => {
+                 if (o.textContent === correctText) {
+                     o.classList.add('correct');
+                 }
+             });
+
+             document.getElementById('quiz-feedback').textContent = `❌ 哎呀! 正确答案: ${correctText}`;
              document.getElementById('quiz-feedback').style.color = 'red';
              playSound('wrong');
              
