@@ -506,7 +506,13 @@
             // Cancel any ongoing speech
             window.speechSynthesis.cancel();
             
-            const utterance = new SpeechSynthesisUtterance(text);
+            // Fix for "I" being read as "Capital I"
+            let textToSpeak = text;
+            if (lang === 'en-US' && text === 'I') {
+                textToSpeak = 'eye'; // Homophone "eye" sounds like "I" but avoids "Capital I" description
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
             utterance.lang = lang; 
             utterance.rate = lang === 'zh-CN' ? 1.0 : 0.8; 
             utterance.pitch = 1.1; // Slightly higher pitch for friendlier tone
