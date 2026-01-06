@@ -14,6 +14,10 @@
             --text-color: #011627;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             background-color: var(--background-color);
@@ -310,22 +314,195 @@
         .speak-btn:active {
             transform: scale(0.9);
         }
+
+        /* Math Styles */
+        .math-table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            width: 100%;
+            margin-top: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .math-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 2px solid var(--secondary-color);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .math-card:hover {
+            transform: scale(1.05);
+            background-color: #E0F7FA;
+        }
+        .visual-container {
+            width: 100%;
+            min-height: 150px;
+            background-color: white;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+            border: 3px dashed var(--primary-color);
+        }
+        .calc-icon {
+            font-size: 2.5em;
+            transition: all 0.5s ease;
+        }
+        .calc-icon.faded {
+            opacity: 0.2;
+            transform: scale(0.5);
+            text-decoration: line-through;
+            color: #ccc;
+        }
+        .calc-icon.added {
+            animation: pop 0.5s ease-in-out;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            transform: scale(0.7);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 4px solid var(--primary-color);
+        }
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            color: #666;
+            line-height: 0.5;
+        }
+        .modal-title {
+            font-size: 2em;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 <canvas id="fireworks-canvas"></canvas>
 
+<!-- Modal -->
+<div id="math-modal" class="modal-overlay" onclick="closeMathModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeMathModal()">×</button>
+        <div id="modal-title" class="modal-title">3 + 2 = 5</div>
+        <div id="modal-visuals" class="visual-container" style="border: none; min-height: 200px;"></div>
+        <button class="btn btn-primary" onclick="replayMathModal()">🔄 再看一次 (Replay)</button>
+    </div>
+</div>
+
 <header>
     <button id="home-btn" class="back-btn" style="display: none;" onclick="goHome()">🏠 首页</button>
-    <h1>🌟 趣味单词大冒险 🌟</h1>
+    <h1>🌟 趣味学习大冒险 🌟</h1>
 </header>
 
 <div class="container">
-    <!-- Menu View -->
-    <div id="menu-view" class="view active">
+    <!-- Root Menu View -->
+    <div id="root-menu-view" class="view active">
+        <h2>请选择一个冒险岛！</h2>
+        <div class="menu-grid" style="grid-template-columns: 1fr;">
+            <button class="unit-btn" onclick="showWordMenu()" style="border-color: var(--primary-color);">📚 单词闯关 (Word Adventure)</button>
+            <button class="unit-btn" onclick="showMathTableMenu()" style="border-color: var(--secondary-color);">🔢 加减法表 (Math Tables)</button>
+            <button class="unit-btn" onclick="startMathGame()" style="border-color: var(--accent-color);">🧮 加减法闯关 (Math Challenge)</button>
+            <button class="unit-btn" onclick="startLogicGame()" style="border-color: #9C27B0;">🧩 数学逻辑思维 (Logic Mind)</button>
+        </div>
+    </div>
+
+    <!-- Word Menu View -->
+    <div id="word-menu-view" class="view">
         <h2>请选择一个单元开始冒险！</h2>
         <div id="unit-list" class="menu-grid">
             <!-- Units will be generated here -->
+        </div>
+    </div>
+    
+    <!-- Math Table Menu View -->
+    <div id="math-table-view" class="view">
+        <div class="controls" style="margin-bottom: 20px;">
+            <button class="btn btn-primary" onclick="renderMathTable('add')">➕ 加法表</button>
+            <button class="btn btn-accent" onclick="renderMathTable('sub')">➖ 减法表</button>
+        </div>
+        <div id="math-table-container" class="math-table-grid">
+            <!-- Tables generated here -->
+        </div>
+    </div>
+
+    <!-- Math Game View -->
+    <div id="math-game-view" class="view">
+        <div class="score-display">得分: <span id="math-score">0</span></div>
+        <div class="quiz-container">
+            <div class="quiz-question" id="math-question">3 + 2 = ?</div>
+            
+            <div class="visual-container" id="math-visuals">
+                <!-- Visuals like apples go here -->
+            </div>
+            
+            <div class="options-grid" id="math-options">
+                <!-- Options generated here -->
+            </div>
+        </div>
+        <div id="math-feedback" style="margin-top: 20px; font-size: 1.5em; height: 1.5em;"></div>
+        <div class="controls" style="display: none;" id="math-next-btn-container">
+            <button class="btn btn-secondary" onclick="nextMathQuestion()">下一题 ➡️</button>
+        </div>
+    </div>
+
+    <!-- Logic Game View -->
+    <div id="logic-game-view" class="view">
+        <div class="score-display">得分: <span id="logic-score">0</span></div>
+        <div class="progress-bar"><div id="logic-progress" class="progress-fill"></div></div>
+        <div class="quiz-container">
+            <div class="quiz-question" id="logic-question" style="font-size: 1.8em;">Question?</div>
+            <div class="options-grid" id="logic-options">
+                <!-- Options generated here -->
+            </div>
+        </div>
+        <div id="logic-feedback" style="margin-top: 20px; font-size: 1.5em; height: 1.5em;"></div>
+        <div class="controls" style="display: none;" id="logic-next-btn-container">
+            <button class="btn btn-secondary" onclick="nextLogicQuestion()">下一题 ➡️</button>
         </div>
     </div>
 
@@ -584,7 +761,7 @@
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
         const homeBtn = document.getElementById('home-btn');
-        if (viewId === 'menu-view') {
+        if (viewId === 'root-menu-view') {
             homeBtn.style.display = 'none';
         } else {
             homeBtn.style.display = 'block';
@@ -592,8 +769,17 @@
     }
 
     function goHome() {
-        showView('menu-view');
+        showView('root-menu-view');
         currentUnit = null;
+    }
+
+    function showWordMenu() {
+        showView('word-menu-view');
+    }
+
+    function showMathTableMenu() {
+        showView('math-table-view');
+        renderMathTable('add'); // Default to addition
     }
 
     function selectUnit(unit) {
@@ -859,6 +1045,594 @@
             animationId = null;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
+    }
+
+    // --- Math Logic ---
+    function renderMathTable(type) {
+        const container = document.getElementById('math-table-container');
+        container.innerHTML = '';
+        const limit = 10;
+        
+        for (let i = 1; i <= limit; i++) {
+            for (let j = 1; j <= limit; j++) {
+                let text = '';
+                let valid = false;
+                
+                if (type === 'add') {
+                    if (i + j <= 10) {
+                        text = `${i} + ${j} = ${i+j}`;
+                        valid = true;
+                    }
+                } else {
+                    // Subtraction: ensure result is positive/zero? usually i - j within 10
+                    // Let's list subtraction tables for numbers up to 10
+                    // e.g. 5 - 1 = 4
+                    // i is the minuend (up to 10), j is subtrahend
+                    if (i >= j) {
+                        text = `${i} - ${j} = ${i-j}`;
+                        valid = true;
+                    }
+                }
+
+                if (valid) {
+                    const card = document.createElement('div');
+                    card.className = 'math-card';
+                    card.textContent = text;
+                    // On click: Speak AND Show Modal
+                    card.onclick = () => {
+                        const speakText = text.replace('+', 'plus').replace('-', 'minus').replace('=', 'equals');
+                        speak(speakText);
+                        openMathModal(i, j, type === 'add' ? '+' : '-');
+                    };
+                    container.appendChild(card);
+                }
+            }
+        }
+    }
+    
+    // --- Modal Logic ---
+    let currentModalData = null;
+
+    function openMathModal(a, b, symbol) {
+        currentModalData = { a, b, symbol };
+        const modal = document.getElementById('math-modal');
+        const title = document.getElementById('modal-title');
+        const visuals = document.getElementById('modal-visuals');
+        
+        let result;
+        if (symbol === '+') result = a + b;
+        else result = a - b;
+        
+        title.textContent = `${a} ${symbol} ${b} = ${result}`;
+        visuals.innerHTML = ''; // Clear previous
+        
+        modal.style.display = 'flex';
+        // Force reflow
+        void modal.offsetWidth; 
+        modal.classList.add('show');
+        
+        // Play animation
+        setTimeout(() => {
+             generateVisualsInContainer(visuals, a, b, symbol);
+        }, 300);
+    }
+
+    function closeMathModal() {
+        const modal = document.getElementById('math-modal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.getElementById('modal-visuals').innerHTML = '';
+        }, 300);
+    }
+
+    function replayMathModal() {
+        if (currentModalData) {
+             const visuals = document.getElementById('modal-visuals');
+             visuals.innerHTML = '';
+             generateVisualsInContainer(visuals, currentModalData.a, currentModalData.b, currentModalData.symbol);
+        }
+    }
+
+    // Updated generateVisuals to support custom container
+    function generateVisualsInContainer(container, a, b, symbol) {
+        const icon = ['🍎', '🍌', '🐱', '🐶', '🌟', '🎈'][Math.floor(Math.random() * 6)];
+        
+        if (symbol === '+') {
+            // Addition: Show first group
+            for(let i=0; i<a; i++) {
+                const span = document.createElement('span');
+                span.className = 'calc-icon';
+                span.textContent = icon;
+                container.appendChild(span);
+            }
+            
+            // Add a visual separator (optional, or just spacing)
+            // Wait 1s, then add second group one by one
+            let delay = 1000;
+            
+            for(let i=0; i<b; i++) {
+                setTimeout(() => {
+                    const span = document.createElement('span');
+                    span.className = 'calc-icon added';
+                    span.textContent = icon;
+                    container.appendChild(span);
+                }, delay);
+                delay += 800; // 800ms gap between each added item
+            }
+        } else {
+            // Subtraction: Show ALL items first
+            for(let i=0; i<a; i++) {
+                const span = document.createElement('span');
+                span.className = 'calc-icon';
+                span.textContent = icon;
+                // Use a unique enough ID for this container context
+                // Using random to avoid conflicts if multiple calls
+                const uniqueId = `sub-icon-${Math.random().toString(36).substr(2, 9)}-${i}`;
+                span.id = uniqueId; 
+                span.dataset.idx = i;
+                container.appendChild(span);
+            }
+            
+            // Wait 1s, then fade out last b items one by one
+            let delay = 1000;
+            const items = Array.from(container.children); // Snapshot of items
+            
+            for(let i=0; i<b; i++) {
+                setTimeout(() => {
+                    // Remove from the end (right side)
+                    const idx = a - 1 - i;
+                    if (items[idx]) items[idx].classList.add('faded');
+                }, delay);
+                delay += 800; // 800ms gap between each removal
+            }
+        }
+    }
+
+    // Wrapper for Game View usage (backwards compatibility)
+    function generateVisuals(a, b, symbol) {
+        const container = document.getElementById('math-visuals');
+        generateVisualsInContainer(container, a, b, symbol);
+    }
+
+    let mathScore = 0;
+    let mathQuestion = null;
+
+    function startMathGame() {
+        mathScore = 0;
+        document.getElementById('math-score').textContent = mathScore;
+        showView('math-game-view');
+        updateMathQuestion();
+    }
+
+    function updateMathQuestion() {
+        document.getElementById('math-feedback').textContent = '';
+        document.getElementById('math-next-btn-container').style.display = 'none';
+        document.getElementById('math-visuals').innerHTML = '';
+
+        // Generate Question
+        const isAdd = Math.random() > 0.5;
+        let a, b, result, symbol;
+        
+        if (isAdd) {
+            // result <= 10
+            result = Math.floor(Math.random() * 10) + 1; // 1 to 10
+            a = Math.floor(Math.random() * result); // 0 to result
+            b = result - a;
+            symbol = '+';
+        } else {
+            // a <= 10
+            a = Math.floor(Math.random() * 10) + 1;
+            b = Math.floor(Math.random() * (a + 1)); // 0 to a
+            result = a - b;
+            symbol = '-';
+        }
+
+        mathQuestion = { a, b, result, symbol };
+        document.getElementById('math-question').textContent = `${a} ${symbol} ${b} = ?`;
+        
+        // Visuals - Show button first
+        document.getElementById('math-visuals').innerHTML = '<button class="btn btn-secondary" style="font-size: 1em; padding: 10px 20px;" onclick="showMathHint()">👀 查看提示 (Show Hint)</button>';
+        
+        // Options
+        const optionsContainer = document.getElementById('math-options');
+        optionsContainer.innerHTML = '';
+        
+        let wrongOpts = [];
+        while(wrongOpts.length < 3) {
+            let r = Math.floor(Math.random() * 11); // 0-10
+            if (r !== result && !wrongOpts.includes(r)) wrongOpts.push(r);
+        }
+        
+        const options = [...wrongOpts, result].sort(() => Math.random() - 0.5);
+        
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = () => checkMathAnswer(btn, opt === result);
+            optionsContainer.appendChild(btn);
+        });
+
+        // Speak question
+        const qText = `${a} ${symbol === '+' ? 'plus' : 'minus'} ${b}`;
+        speak(qText);
+    }
+
+    function showMathHint() {
+        document.getElementById('math-visuals').innerHTML = '';
+        generateVisuals(mathQuestion.a, mathQuestion.b, mathQuestion.symbol);
+    }
+    
+    // Legacy function removed/replaced by generateVisualsInContainer logic above
+    // function generateVisuals(a, b, symbol) { ... } -> now just a wrapper
+
+
+    function checkMathAnswer(btn, isCorrect) {
+        const opts = document.querySelectorAll('#math-options .option-btn');
+        opts.forEach(o => o.disabled = true);
+
+        const correctPhrases = ["你真棒!", "算对了!", "天才!", "Correct!"];
+        const wrongPhrases = ["再算算哦!", "加油!", "Try again!"];
+
+        if (isCorrect) {
+            btn.classList.add('correct');
+            document.getElementById('math-feedback').textContent = '✅ 答对了!';
+            document.getElementById('math-feedback').style.color = 'green';
+            mathScore += 10;
+            playSound('correct');
+            fireworks();
+            
+            const msg = correctPhrases[Math.floor(Math.random() * correctPhrases.length)];
+            speak(msg, 'zh-CN');
+        } else {
+            btn.classList.add('wrong');
+            btn.classList.add('shake-anim');
+            setTimeout(() => btn.classList.remove('shake-anim'), 500);
+            
+            // Highlight correct
+            opts.forEach(o => {
+                if (parseInt(o.textContent) === mathQuestion.result) {
+                    o.classList.add('correct');
+                }
+            });
+
+            document.getElementById('math-feedback').textContent = `❌ 正确答案: ${mathQuestion.result}`;
+            document.getElementById('math-feedback').style.color = 'red';
+            playSound('wrong');
+            
+            const msg = wrongPhrases[Math.floor(Math.random() * wrongPhrases.length)];
+            speak(msg, 'zh-CN');
+        }
+        
+        document.getElementById('math-score').textContent = mathScore;
+        document.getElementById('math-next-btn-container').style.display = 'flex';
+    }
+
+    function nextMathQuestion() {
+        updateMathQuestion();
+    }
+
+    // --- Logic Game (200 Questions) ---
+    let logicQuestions = [];
+    let logicIndex = 0;
+    let logicScore = 0;
+
+    function startLogicGame() {
+        generateLogicQuestions();
+        logicIndex = 0;
+        logicScore = 0;
+        document.getElementById('logic-score').textContent = logicScore;
+        showView('logic-game-view');
+        updateLogicQuestion();
+    }
+
+    function generateLogicQuestions() {
+        logicQuestions = [];
+        // Generate 200 questions procedurally
+        for (let i = 0; i < 200; i++) {
+            const type = Math.floor(Math.random() * 18); // Now 8 types!
+            let q = {};
+            
+            // 1. Number Sequence: 1, 3, 5, ?
+            if (type === 0) {
+                const start = Math.floor(Math.random() * 3) + 1; 
+                const step = Math.floor(Math.random() * 2) + 1; 
+                const seq = [start, start+step, start+2*step];
+                q.text = `找规律 (Pattern): ${seq.join(', ')}, ?`;
+                q.answer = start + 3*step;
+                q.options = generateOptions(q.answer);
+            }
+            // 2. Shape Pattern: 🍎, 🍌, 🍎, ?
+            else if (type === 1) {
+                const icons = ['🍎', '🍌', '🐱', '🐶', '🌟', '🎈', '🔵', '🔺'];
+                const a = icons[Math.floor(Math.random() * icons.length)];
+                let b = icons[Math.floor(Math.random() * icons.length)];
+                while(a === b) b = icons[Math.floor(Math.random() * icons.length)];
+                
+                const patternType = Math.random() > 0.5 ? 'ABAB' : 'AABB';
+                if (patternType === 'ABAB') {
+                    q.text = `找规律 (Pattern): ${a}, ${b}, ${a}, ?`;
+                    q.answer = b;
+                    q.options = [a, b, icons[Math.floor(Math.random()*icons.length)], icons[Math.floor(Math.random()*icons.length)]];
+                } else {
+                    q.text = `找规律 (Pattern): ${a}, ${a}, ${b}, ?`;
+                    q.answer = b; 
+                    q.options = [a, b, icons[Math.floor(Math.random()*icons.length)], icons[Math.floor(Math.random()*icons.length)]];
+                }
+                q.options = [...new Set(q.options)].slice(0, 4);
+                while(q.options.length < 4) {
+                   const r = icons[Math.floor(Math.random()*icons.length)];
+                   if(!q.options.includes(r)) q.options.push(r);
+                }
+                q.options = q.options.sort(() => Math.random() - 0.5);
+            }
+            // 3. Simple Equation Logic: 🍎 + 1 = 3, 🍎 = ?
+            else if (type === 2) {
+                const icons = ['🍎', '🍌', '🐱', '🐶', '🌟'];
+                const icon = icons[Math.floor(Math.random() * icons.length)];
+                const val = Math.floor(Math.random() * 5) + 1; 
+                const res = val + Math.floor(Math.random() * 3) + 1; 
+                const diff = res - val;
+                
+                q.text = `已知 (If): ${icon} + ${diff} = ${res}, 那么 (Then) ${icon} = ?`;
+                q.answer = val;
+                q.options = generateOptions(val);
+            }
+            // 4. Comparison: Which is biggest?
+            else if (type === 3) {
+                const n1 = Math.floor(Math.random() * 10);
+                const n2 = Math.floor(Math.random() * 10);
+                const n3 = Math.floor(Math.random() * 10);
+                if (n1 !== n2 && n2 !== n3 && n1 !== n3) {
+                    const max = Math.max(n1, n2, n3);
+                    q.text = `哪个数字最大? (Which is biggest?): ${n1}, ${n2}, ${n3}`;
+                    q.answer = max;
+                    q.options = [n1, n2, n3].sort(() => Math.random() - 0.5);
+                    q.options.push(Math.floor(Math.random()*10));
+                    q.options = [...new Set(q.options)].sort(() => Math.random() - 0.5);
+                } else {
+                    q.text = `${n1} > ? (选一个比它小的数)`;
+                    q.answer = n1 - 1; 
+                    if(q.answer < 0) q.answer = 0; 
+                    q.options = [q.answer, n1+1, n1+2, n1+3].sort(() => Math.random() - 0.5);
+                }
+            }
+            // 5. Word Problem (Queuing)
+            else if (type === 4) {
+                const total = Math.floor(Math.random() * 5) + 5; 
+                const pos = Math.floor(Math.random() * (total - 2)) + 1; 
+                q.text = `队伍里有 ${total} 个人。我是第 ${pos} 个。我后面有几个人?`;
+                q.answer = total - pos;
+                q.options = generateOptions(q.answer);
+            }
+            // 6. Clock/Time Logic (Simple hours)
+            else if (type === 5) {
+                const hour = Math.floor(Math.random() * 12) + 1;
+                const after = Math.floor(Math.random() * 3) + 1;
+                let newHour = hour + after;
+                if (newHour > 12) newHour -= 12;
+                
+                q.text = `现在是 ${hour} 点 (Now ${hour}:00)。过 ${after} 小时是几点?`;
+                q.answer = newHour;
+                q.options = generateOptions(newHour);
+            }
+            // 7. Geometry Counting (Sides)
+            else if (type === 6) {
+                const shapes = [
+                    { name: '三角形 (Triangle)', sides: 3 },
+                    { name: '正方形 (Square)', sides: 4 },
+                    { name: '五边形 (Pentagon)', sides: 5 }
+                ];
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                q.text = `${shape.name} 有几条边? (How many sides?)`;
+                q.answer = shape.sides;
+                q.options = [3, 4, 5, 6].sort(() => Math.random() - 0.5);
+            }
+            // 8. Simple Money/Counting (Apples cost)
+            else if (type === 7) {
+                const price = Math.floor(Math.random() * 3) + 1; // 1-3
+                const count = Math.floor(Math.random() * 3) + 2; // 2-4
+                const total = price * count;
+                q.text = `一个 🍎 ${price} 元。买 ${count} 个 🍎 要多少钱?`;
+                q.answer = total;
+                q.options = generateOptions(total);
+            }
+            // 9. Age Logic
+            else if (type === 8) {
+                const age = Math.floor(Math.random() * 5) + 5; // 5-9
+                const diff = Math.floor(Math.random() * 3) + 1;
+                q.text = `小明 ${age} 岁。妹妹比他小 ${diff} 岁。妹妹几岁?`;
+                q.answer = age - diff;
+                q.options = generateOptions(q.answer);
+            }
+            // 10. Missing Operator
+            else if (type === 9) {
+                const a = Math.floor(Math.random() * 5) + 2;
+                const b = Math.floor(Math.random() * 4) + 1;
+                const ops = ['+', '-'];
+                const op = ops[Math.floor(Math.random() * ops.length)];
+                let res;
+                if (op === '+') res = a + b;
+                else res = a - b;
+                q.text = `${a} ? ${b} = ${res}`;
+                q.answer = op;
+                q.options = ['+', '-', 'x', '='];
+            }
+            // 11. Between Numbers
+            else if (type === 10) {
+                const start = Math.floor(Math.random() * 10);
+                const end = start + 2;
+                q.text = `哪个数在 ${start} 和 ${end} 之间?`;
+                q.answer = start + 1;
+                q.options = generateOptions(q.answer);
+            }
+            // 12. Odd/Even
+            else if (type === 11) {
+                const isOdd = Math.random() > 0.5;
+                const targetType = isOdd ? '单数 (Odd)' : '双数 (Even)';
+                const start = Math.floor(Math.random() * 5) * 2; // Even base
+                let nums = [];
+                let correct;
+                if (isOdd) {
+                    correct = start + 1;
+                    nums = [start, start + 2, start + 4, correct];
+                } else {
+                    correct = start + 2;
+                    nums = [start + 1, start + 3, start + 5, correct];
+                }
+                q.text = `找出${targetType}: ${nums.sort(() => Math.random() - 0.5).join(', ')}`;
+                q.answer = correct;
+                q.options = nums.sort(() => Math.random() - 0.5);
+            }
+            // 13. Double/Half
+            else if (type === 12) {
+                const isDouble = Math.random() > 0.5;
+                const num = Math.floor(Math.random() * 5) + 1;
+                if (isDouble) {
+                    q.text = `${num} 的加倍 (Double) 是多少?`;
+                    q.answer = num * 2;
+                } else {
+                    const evenNum = num * 2;
+                    q.text = `${evenNum} 的一半 (Half) 是多少?`;
+                    q.answer = num;
+                }
+                q.options = generateOptions(q.answer);
+            }
+            // 14. Day Sequence
+            else if (type === 13) {
+                const days = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+                const start = Math.floor(Math.random() * 4);
+                q.text = `${days[start]}, ${days[start+1]}, ?`;
+                q.answer = days[start+2];
+                q.options = [days[start+2], days[(start+3)%7], days[(start+4)%7], days[(start+5)%7]].sort(() => Math.random() - 0.5);
+            }
+            // 15. Simple Direction
+            else if (type === 14) {
+                const start = 0;
+                const right = Math.floor(Math.random() * 5) + 3;
+                const left = Math.floor(Math.random() * 2) + 1;
+                q.text = `从 0 开始，向右走 ${right} 步，再向左走 ${left} 步。在哪?`;
+                q.answer = right - left;
+                q.options = generateOptions(q.answer);
+            }
+            // 16. Triple Addition
+            else if (type === 15) {
+                const a = Math.floor(Math.random() * 5);
+                const b = Math.floor(Math.random() * 5);
+                const c = Math.floor(Math.random() * 5);
+                q.text = `${a} + ${b} + ${c} = ?`;
+                q.answer = a + b + c;
+                q.options = generateOptions(q.answer);
+            }
+            // 17. Simple Subtraction Word Problem
+            else if (type === 16) {
+                const total = Math.floor(Math.random() * 5) + 5;
+                const eaten = Math.floor(Math.random() * 3) + 1;
+                q.text = `有 ${total} 个 🍎，吃了 ${eaten} 个。还剩几个?`;
+                q.answer = total - eaten;
+                q.options = generateOptions(q.answer);
+            }
+            // 18. Shape Math
+            else if (type === 17) {
+                 const shapes = [
+                    { name: '🔺', val: 3 },
+                    { name: '🟦', val: 4 },
+                    { name: '⬠', val: 5 }
+                ];
+                const s1 = shapes[Math.floor(Math.random() * shapes.length)];
+                const s2 = shapes[Math.floor(Math.random() * shapes.length)];
+                q.text = `${s1.name} + ${s2.name} = ? 条边`;
+                q.answer = s1.val + s2.val;
+                q.options = generateOptions(q.answer);
+            }
+            
+            logicQuestions.push(q);
+        }
+    }
+
+    function generateOptions(answer) {
+        let opts = [answer];
+        while(opts.length < 4) {
+            let r = answer + Math.floor(Math.random() * 5) - 2;
+            if (r < 0) r = 0;
+            if (!opts.includes(r)) opts.push(r);
+        }
+        return opts.sort(() => Math.random() - 0.5);
+    }
+
+    function updateLogicQuestion() {
+        if (logicIndex >= logicQuestions.length) {
+            // End of Logic Game
+             alert("哇！你太厉害了！完成了所有逻辑挑战！");
+             goHome();
+             return;
+        }
+
+        const q = logicQuestions[logicIndex];
+        document.getElementById('logic-question').textContent = `${logicIndex + 1}. ${q.text}`;
+        document.getElementById('logic-feedback').textContent = '';
+        document.getElementById('logic-next-btn-container').style.display = 'none';
+        
+        // Progress
+        const percent = ((logicIndex) / 200) * 100;
+        document.getElementById('logic-progress').style.width = percent + '%';
+
+        const container = document.getElementById('logic-options');
+        container.innerHTML = '';
+        
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = () => checkLogicAnswer(btn, opt === q.answer, q.answer);
+            container.appendChild(btn);
+        });
+        
+        // Speak logic question (Chinese mainly)
+        // If it contains icons, we might skip reading or read simplified
+        // Simple heuristic: read text content
+        speak(q.text.replace(/🍎|🍌|🐱|🐶|🌟|🎈|🔵|🔺/g, "图形"), 'zh-CN');
+    }
+
+    function checkLogicAnswer(btn, isCorrect, correctVal) {
+        const opts = document.querySelectorAll('#logic-options .option-btn');
+        opts.forEach(o => o.disabled = true);
+
+        if (isCorrect) {
+            btn.classList.add('correct');
+            document.getElementById('logic-feedback').textContent = '✅ 答对了! 真聪明!';
+            document.getElementById('logic-feedback').style.color = 'green';
+            logicScore += 10;
+            playSound('correct');
+            fireworks();
+            speak("答对了!", 'zh-CN');
+        } else {
+            btn.classList.add('wrong');
+            btn.classList.add('shake-anim');
+            setTimeout(() => btn.classList.remove('shake-anim'), 500);
+            
+            // Highlight correct
+            opts.forEach(o => {
+                // Check equality. For icons, string compare. For numbers, value compare.
+                if (o.textContent == correctVal) {
+                    o.classList.add('correct');
+                }
+            });
+
+            document.getElementById('logic-feedback').textContent = `❌ 正确答案: ${correctVal}`;
+            document.getElementById('logic-feedback').style.color = 'red';
+            playSound('wrong');
+            speak("没关系，下次加油!", 'zh-CN');
+        }
+        
+        document.getElementById('logic-score').textContent = logicScore;
+        document.getElementById('logic-next-btn-container').style.display = 'flex';
+    }
+
+    function nextLogicQuestion() {
+        logicIndex++;
+        updateLogicQuestion();
     }
 
     // Start
