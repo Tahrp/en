@@ -1,29 +1,731 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>My Lovely Panda · 点读绘本 V2</title>
-<style>
-body{margin:0;background:#fff8e9;font-family:Arial,"Microsoft YaHei",sans-serif;color:#25352b}.hero{padding:25px 15px;text-align:center;background:linear-gradient(135deg,#dff4df,#fff1bd)}h1{margin:5px;font-size:42px}.panda{font-size:64px}.tools{position:sticky;top:0;z-index:5;background:#fff;padding:10px;text-align:center;box-shadow:0 2px 10px #0002}.tools button,.tools select{padding:9px 12px;margin:3px;border:0;border-radius:14px;font-size:15px}.tools button{background:#4e9263;color:#fff}.tools select{border:1px solid #cdddcf;background:white}.page{max-width:850px;margin:20px auto;padding:0 15px}.card{background:white;border-radius:25px;padding:20px;margin:15px 0;box-shadow:0 5px 18px #00000012;border:2px solid #edf2e7}.tag{font-size:13px;color:#6b8571}.sentence{font-size:29px;font-weight:bold;line-height:1.5;cursor:pointer;padding:9px;border-radius:14px}.sentence:hover,.active{background:#dff3e3}.cn{font-size:18px;color:#777;padding:4px 9px}.words{padding:10px 7px;display:flex;gap:7px;flex-wrap:wrap}.word{padding:7px 10px;background:#edf7ee;border-radius:20px;cursor:pointer;border:1px solid #d3e9d5}.word:hover{background:#cfead2}.mode{margin:15px auto;max-width:850px;background:#fff0bd;border-radius:18px;padding:12px;text-align:center}.challenge{margin:25px auto;max-width:850px;background:#ffe8ef;padding:20px;border-radius:25px;text-align:center}.hiddenText{filter:blur(7px);user-select:none}.footer{text-align:center;padding:25px;color:#777}
-@media(max-width:600px){h1{font-size:32px}.sentence{font-size:24px}}
-</style><body>
-<div class="hero"><div class="panda">🐼🎋🐼</div><h1>My Lovely Panda</h1><div>我的可爱熊猫 · 英语真人感点读练习 V2</div></div>
-<div class="tools">
-<button onclick="playAll()">▶ 全文</button><button onclick="stop()">■ 停止</button>
-<button onclick="rate=.7">🐢 慢速</button><button onclick="rate=.9">🗣 正常</button>
-<select id="voice"></select>
-</div>
-<div class="mode">🌟 <b>练习方法：</b>先点句子听 → 再点单词 → 最后自己朗读。每次只练 3～5 句！</div>
-<div class="page" id="book"></div>
-<div class="challenge"><h2>🐼 听力挑战</h2><p id="q">点击开始，先听一句，不看答案，自己说出来！</p><button onclick="quiz()">🎧 开始挑战</button> <button onclick="answer()">👀 显示答案</button></div>
-<div class="footer">🐼 Little by little, you will be great!</div>
-<script>
-const lines=[
-["Hello, everyone!","大家好！"],["My name is Huahua.","我的名字叫花花。"],["I am seven years old.","我七岁了。"],["Today, I want to tell you about my lovely friend.","今天，我想给大家介绍我的一位可爱的朋友。"],["Who is my friend?","我的朋友是谁呢？"],["Look!","看！"],["It is black and white.","它是黑白相间的。"],["It has a round face.","它有一张圆圆的脸。"],["It has two black ears.","它有两只黑色的耳朵。"],["It has two big black eyes.","它有一双大大的黑眼睛。"],["It is very cute!","它非常可爱！"],["Can you guess?","你能猜出来吗？"],["Yes!","对啦！"],["It is a panda!","它就是大熊猫！"],["Pandas live in China.","大熊猫生活在中国。"],["Pandas are very special in China.","大熊猫在中国非常特别。"],["I love pandas very much.","我非常喜欢大熊猫。"],["What do pandas like to eat?","大熊猫喜欢吃什么呢？"],["They like bamboo!","它们喜欢吃竹子！"],["They eat bamboo in the morning.","早上，它们吃竹子。"],["They eat bamboo in the afternoon.","下午，它们吃竹子。"],["They eat bamboo at night.","晚上，它们还是吃竹子。"],["Eat, eat, eat!","吃呀，吃呀，吃！"],["After eating, what do they do?","吃完以后，它们做什么呢？"],["They sleep!","它们睡觉！"],["Eat and sleep.","吃了睡。"],["Eat and sleep.","睡了吃。"],["What a happy life!","多么快乐的生活呀！"],["Pandas are cute.","大熊猫很可爱。"],["Pandas are funny.","大熊猫很有趣。"],["Pandas are lovely.","大熊猫很招人喜欢。"],["Many people love pandas.","很多人都喜欢大熊猫。"],["People from many countries love pandas, too.","很多国家的人们也喜欢大熊猫。"],["When people see pandas, they think of China.","当人们看到大熊猫，就会想到中国。"],["China is the home of pandas.","中国是大熊猫的家。"],["China is my home, too.","中国也是我的家。"],["I love my lovely panda.","我爱我可爱的大熊猫。"],["I love my beautiful China.","我爱美丽的中国。"],["I hope more people can know pandas.","我希望有更多的人认识大熊猫。"],["I hope more people can know China.","我也希望有更多的人了解中国。"],["Pandas come from China.","大熊猫来自中国。"],["They say:","它们好像在说："],["Hello, world!","世界，你们好！"],["And I want to say:","而我也想说："],["Hello, world!","世界，你们好！"],["This is my lovely panda.","这是我可爱的大熊猫。"],["This is my beautiful China!","这是我美丽的中国！"],["Thank you, everyone!","谢谢大家！"]];
-let rate=.82,vs=[],qi=0;
-const book=document.querySelector('#book');
-lines.forEach((x,i)=>{let c=document.createElement('div');c.className='card';let words=x[0].match(/[A-Za-z]+(?:'[A-Za-z]+)?/g)||[];c.innerHTML=`<div class=tag>第 ${i+1} 句 · 点击整句朗读</div><div class=sentence>${x[0]} 🔊</div><div class=cn>${x[1]}</div><div class=words>${words.map(w=>`<span class=word>${w}</span>`).join('')}</div>`;c.querySelector('.sentence').onclick=()=>say(x[0],c);c.querySelectorAll('.word').forEach((w,j)=>w.onclick=e=>{e.stopPropagation();say(words[j],c)});book.append(c)});
-function voices(){vs=speechSynthesis.getVoices().filter(v=>/^en-(US|GB|AU)/i.test(v.lang));let s=document.querySelector('#voice');s.innerHTML='';vs.sort((a,b)=>/natural|online|enhanced|premium/i.test(b.name)-/natural|online|enhanced|premium/i.test(a.name));vs.forEach((v,i)=>s.add(new Option('🎙 '+v.name+' · '+v.lang,i)));}voices();speechSynthesis.onvoiceschanged=voices;
-function say(t,el){stop();let u=new SpeechSynthesisUtterance(t),v=vs[document.querySelector('#voice').value]||vs[0];if(v){u.voice=v;u.lang=v.lang}else u.lang='en-US';u.rate=rate;u.pitch=1;if(el)el.classList.add('active');u.onend=()=>el&&el.classList.remove('active');speechSynthesis.speak(u)}
-function stop(){speechSynthesis.cancel();document.querySelectorAll('.active').forEach(x=>x.classList.remove('active'))}
-async function playAll(){stop();for(let i=0;i<lines.length;i++){let el=document.querySelectorAll('.card')[i];el.classList.add('active');await new Promise(r=>{let u=new SpeechSynthesisUtterance(lines[i][0]),v=vs[document.querySelector('#voice').value]||vs[0];if(v)u.voice=v;u.lang=v?v.lang:'en-US';u.rate=rate;u.onend=r;u.onerror=r;speechSynthesis.speak(u)});el.classList.remove('active')}}
-function quiz(){qi=Math.floor(Math.random()*lines.length);document.querySelector('#q').textContent='🙉 认真听！然后自己说一遍。';say(lines[qi][0])}
-function answer(){document.querySelector('#q').innerHTML='<b>'+lines[qi][0]+'</b><br>'+lines[qi][1]}
-</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fffaf0">
+  <title>My Lovely Panda | 我的可爱熊猫</title>
+  <style>
+    :root {
+      --ink: #202522;
+      --muted: #65706a;
+      --paper: #fffdf8;
+      --cream: #fff8e8;
+      --green: #2e7552;
+      --green-dark: #20583d;
+      --green-soft: #e4f3e9;
+      --yellow: #ffd96a;
+      --yellow-soft: #fff3c7;
+      --coral: #f27961;
+      --blue: #4b82c3;
+      --border: #dce5df;
+      --shadow: 0 12px 34px rgba(39, 69, 52, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(46, 117, 82, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(46, 117, 82, .045) 1px, transparent 1px),
+        var(--cream);
+      background-size: 28px 28px;
+      font-family: ui-rounded, "SF Pro Rounded", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, select, input { font: inherit; }
+    button { color: inherit; }
+
+    .app { min-height: 100vh; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(46, 117, 82, .14);
+      background: rgba(255, 253, 248, .94);
+      backdrop-filter: blur(16px);
+    }
+
+    .header-inner {
+      width: min(1120px, calc(100% - 32px));
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .panda-mark {
+      width: 54px;
+      height: 54px;
+      flex: 0 0 54px;
+      filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .12));
+    }
+
+    .title-wrap { min-width: 0; }
+    h1 { margin: 0; font-size: clamp(20px, 3vw, 30px); line-height: 1.05; }
+    .subtitle { margin-top: 4px; color: var(--green); font-size: 14px; font-weight: 700; }
+
+    .header-progress {
+      margin-left: auto;
+      min-width: 155px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .progress-track {
+      height: 7px;
+      margin-top: 7px;
+      overflow: hidden;
+      border-radius: 10px;
+      background: #e7ece8;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--green);
+      transition: width .25s ease;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 28px auto 56px;
+      display: grid;
+      grid-template-columns: 276px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .control-panel {
+      position: sticky;
+      top: 100px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .now-playing {
+      min-height: 118px;
+      padding: 18px;
+      background: var(--green-dark);
+      color: white;
+    }
+
+    .eyebrow { font-size: 11px; font-weight: 800; opacity: .72; }
+    #nowEnglish { margin: 8px 0 5px; font-size: 20px; font-weight: 800; line-height: 1.25; }
+    #nowChinese { color: #d9eee1; font-size: 13px; line-height: 1.45; }
+
+    .transport {
+      display: grid;
+      grid-template-columns: 44px 1fr 44px 44px;
+      gap: 8px;
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .icon-button, .play-all {
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform .14s ease, background .14s ease, border-color .14s ease;
+    }
+
+    .icon-button:hover, .play-all:hover { transform: translateY(-1px); border-color: var(--green); }
+    .icon-button:focus-visible, .play-all:focus-visible, .word:focus-visible, .sentence:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid rgba(75, 130, 195, .35); outline-offset: 2px; }
+    .play-all { border: 0; background: var(--yellow); font-weight: 900; }
+    .icon-button svg, .play-all svg, .line-play svg { width: 20px; height: 20px; stroke-width: 2.4; }
+
+    .settings { padding: 16px; display: grid; gap: 15px; }
+    .field { display: grid; gap: 7px; }
+    .field-label { color: var(--muted); font-size: 12px; font-weight: 800; }
+    select, input[type="url"] {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      padding: 0 10px;
+      color: var(--ink);
+    }
+
+    input[type="range"] { width: 100%; accent-color: var(--green); }
+    .speed-row { display: flex; align-items: center; gap: 10px; }
+    .speed-value { min-width: 42px; color: var(--green); font-size: 13px; font-weight: 900; text-align: right; }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 3px;
+      border-radius: 7px;
+      background: #edf1ee;
+    }
+
+    .segmented button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .segmented button[aria-pressed="true"] { background: white; box-shadow: 0 2px 8px rgba(32, 37, 34, .10); color: var(--green-dark); }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .switch { position: relative; width: 42px; height: 24px; flex: 0 0 auto; }
+    .switch input { position: absolute; opacity: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 20px; background: #cbd4ce; cursor: pointer; transition: .2s; }
+    .slider::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+    .switch input:checked + .slider { background: var(--green); }
+    .switch input:checked + .slider::after { transform: translateX(18px); }
+
+    .lesson { min-width: 0; }
+    .lesson-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 253, 248, .88);
+    }
+    .lesson-nav button {
+      min-width: 88px;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .lesson-nav button:hover:not(:disabled) { border-color: var(--green); color: var(--green-dark); }
+    .lesson-nav button:disabled { cursor: not-allowed; opacity: .42; }
+    .page-indicator { color: var(--green-dark); font-size: 13px; font-weight: 900; text-align: center; }
+    .page-indicator small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .section { margin-bottom: 28px; }
+    .section-title { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; color: var(--green-dark); font-size: 14px; font-weight: 900; }
+    .section-title::after { content: ""; height: 1px; flex: 1; background: var(--border); }
+
+    .sentence-list { display: grid; gap: 9px; }
+    .sentence {
+      position: relative;
+      width: 100%;
+      min-height: 82px;
+      padding: 14px 60px 13px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 3px 10px rgba(39, 69, 52, .045);
+      cursor: pointer;
+      text-align: left;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .sentence:hover { transform: translateY(-1px); border-color: #9dc4ad; box-shadow: 0 7px 17px rgba(39, 69, 52, .09); }
+    .sentence.active { border-color: var(--green); background: #f5fbf7; box-shadow: 0 0 0 3px rgba(46, 117, 82, .10); }
+    .sentence.done::before { content: "✓"; position: absolute; top: 7px; left: -8px; width: 20px; height: 20px; border-radius: 50%; background: var(--green); color: white; display: grid; place-items: center; font-size: 11px; font-weight: 900; }
+
+    .english { min-height: 30px; font-size: clamp(18px, 2.3vw, 23px); line-height: 1.35; font-weight: 800; }
+    .word { display: inline; margin: 0; padding: 2px 1px; border: 0; border-radius: 3px; background: transparent; cursor: pointer; font: inherit; line-height: inherit; }
+    .word:hover { background: var(--yellow-soft); color: #694e00; }
+    .word.speaking { background: var(--yellow); color: #493500; }
+    .punct { white-space: pre; }
+    .chinese { margin-top: 5px; color: var(--muted); font-size: 15px; line-height: 1.45; }
+    .hide-chinese .chinese { display: none; }
+    .hide-chinese .sentence { min-height: 64px; }
+
+    .line-play {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      transform: translateY(-50%);
+      border: 0;
+      border-radius: 50%;
+      background: var(--green-soft);
+      color: var(--green-dark);
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+
+    .sentence.active .line-play { background: var(--green); color: white; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 50; max-width: calc(100% - 32px); transform: translate(-50%, 20px); padding: 10px 15px; border-radius: 6px; background: #242a26; color: white; font-size: 13px; opacity: 0; pointer-events: none; transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 780px) {
+      .header-inner { width: min(100% - 24px, 720px); min-height: 68px; }
+      .panda-mark { width: 46px; height: 46px; flex-basis: 46px; }
+      .header-progress { min-width: 96px; }
+      main { width: min(100% - 24px, 720px); margin-top: 16px; grid-template-columns: 1fr; gap: 18px; }
+      .control-panel { position: static; }
+      .now-playing { min-height: 96px; }
+      .transport { grid-template-columns: 44px 1fr 44px 44px; }
+      .settings { grid-template-columns: 1fr 1fr; }
+      .settings .wide { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 490px) {
+      .header-progress { display: none; }
+      .settings { grid-template-columns: 1fr; }
+      .settings .wide { grid-column: auto; }
+      .sentence { padding-left: 14px; padding-right: 54px; }
+      .english { font-size: 19px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-inner">
+        <svg class="panda-mark" viewBox="0 0 100 100" role="img" aria-label="熊猫头像">
+          <circle cx="26" cy="24" r="18" fill="#202522"/>
+          <circle cx="74" cy="24" r="18" fill="#202522"/>
+          <circle cx="50" cy="52" r="39" fill="#fff" stroke="#202522" stroke-width="4"/>
+          <ellipse cx="35" cy="48" rx="11" ry="15" fill="#202522" transform="rotate(25 35 48)"/>
+          <ellipse cx="65" cy="48" rx="11" ry="15" fill="#202522" transform="rotate(-25 65 48)"/>
+          <circle cx="38" cy="47" r="3.5" fill="#fff"/>
+          <circle cx="62" cy="47" r="3.5" fill="#fff"/>
+          <ellipse cx="50" cy="64" rx="7" ry="5" fill="#202522"/>
+          <path d="M43 71 Q50 78 57 71" fill="none" stroke="#202522" stroke-width="3" stroke-linecap="round"/>
+          <path d="M79 79 Q92 62 91 43" fill="none" stroke="#2e7552" stroke-width="7" stroke-linecap="round"/>
+          <path d="M86 59 Q74 54 72 44 Q84 44 89 50" fill="#63a66e"/>
+        </svg>
+        <div class="title-wrap">
+          <h1>My Lovely Panda</h1>
+          <div class="subtitle">我的可爱熊猫 · 英语点读</div>
+        </div>
+        <div class="header-progress">
+          <span id="progressText">0 / 44 句</span>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <aside class="control-panel" aria-label="朗读控制">
+        <div class="now-playing" aria-live="polite">
+          <div class="eyebrow">NOW READING · 正在朗读</div>
+          <div id="nowEnglish">点一句，开始朗读</div>
+          <div id="nowChinese">也可以直接点英文单词</div>
+        </div>
+        <div class="transport">
+          <button class="icon-button" id="previousButton" type="button" title="上一句" aria-label="上一句">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 20 9 12l10-8v16Z"/><path d="M5 19V5"/></svg>
+          </button>
+          <button class="play-all" id="playButton" type="button">
+            <svg id="playIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 4 13 8-13 8V4Z"/></svg>
+            <span id="playLabel">全文播放</span>
+          </button>
+          <button class="icon-button" id="nextButton" type="button" title="下一句" aria-label="下一句">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 4 10 8-10 8V4Z"/><path d="M19 5v14"/></svg>
+          </button>
+          <button class="icon-button" id="stopButton" type="button" title="停止" aria-label="停止">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          </button>
+        </div>
+        <div class="settings">
+          <div class="field wide">
+            <label class="field-label" for="voiceSelect">英语发音</label>
+            <select id="voiceSelect" aria-label="选择英语发音"><option>正在读取系统语音…</option></select>
+          </div>
+          <div class="field">
+            <span class="field-label">口音</span>
+            <div class="segmented" id="accentControl">
+              <button type="button" data-accent="en-US" aria-pressed="true">美式</button>
+              <button type="button" data-accent="en-GB" aria-pressed="false">英式</button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="speedRange">语速</label>
+            <div class="speed-row">
+              <input id="speedRange" type="range" min="0.55" max="1.15" step="0.05" value="0.8">
+              <span class="speed-value" id="speedValue">0.8×</span>
+            </div>
+          </div>
+          <div class="toggle-row wide">
+            <span class="field-label">显示中文翻译</span>
+            <label class="switch">
+              <input id="translationToggle" type="checkbox" checked aria-label="显示中文翻译">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </aside>
+
+      <article class="lesson" id="lesson" aria-label="点读课文"></article>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const sections = [
+      { title: "01 · Say hello · 打个招呼", lines: [
+        ["Hello, everyone!", "大家好！"],
+        ["My name is Huahua.", "我的名字叫花花。"],
+        ["I am seven years old.", "我七岁了。"],
+        ["Today, I want to talk about my lovely friend.", "今天，我想给大家介绍我的一位可爱的朋友。"]
+      ]},
+      { title: "02 · Guess my friend · 猜猜我的朋友", lines: [
+        ["Who is my friend?", "我的朋友是谁呢？"],
+        ["Look!", "看！"],
+        ["It is black and white.", "它是黑白相间的。"],
+        ["It has a round face.", "它有一张圆圆的脸。"],
+        ["It has two black ears.", "它有两只黑色的耳朵。"],
+        ["It has two black eyes.", "它有一双大大的黑眼睛。"],
+        ["It is very cute!", "它非常可爱！"],
+        ["Can you guess?", "你能猜出来吗？"],
+        ["Yes!", "对啦！"],
+        ["It is a panda!", "它就是大熊猫！"]
+      ]},
+      { title: "03 · Pandas and China · 熊猫与中国", lines: [
+        ["Pandas live in China.", "大熊猫生活在中国。"],
+        ["Pandas are very special in China.", "大熊猫在中国非常特别。"],
+        ["I love pandas very much.", "我非常喜欢大熊猫。"]
+      ]},
+      { title: "04 · Eat and sleep · 吃饭和睡觉", lines: [
+        ["What do pandas like to eat?", "大熊猫喜欢吃什么呢？"],
+        ["They like eating bamboo!", "它们喜欢吃竹子！"],
+        ["They eat bamboo in the morning.", "早上，它们吃竹子。"],
+        ["They eat bamboo in the afternoon.", "下午，它们吃竹子。"],
+        ["They eat bamboo at night.", "晚上，它们还是吃竹子。"],
+        ["Eat, eat, eat!", "吃呀，吃呀，吃！"],
+        ["After eating, what do they do?", "吃完以后，它们做什么呢？"],
+        ["They sleep!", "它们睡觉！"],
+        ["Eat and sleep.", "吃了睡。"],
+        ["Eat and sleep.", "睡了吃。"],
+        ["What a happy life!", "多么快乐的生活呀！"]
+      ]},
+      { title: "05 · Loved around the world · 世界都喜爱", lines: [
+        ["Pandas are cute.", "大熊猫很可爱。"],
+        ["Pandas are funny.", "大熊猫很有趣。"],
+        ["Pandas are lovely.", "大熊猫很招人喜欢。"],
+        ["Pandas are famous all over the world.", "大熊猫在全世界都很有名。"],
+        ["Friends from other countries love pandas too.", "其他国家的朋友们也非常喜欢大熊猫。"],
+        ["Pandas are our lovely cultural gift.", "熊猫是我们珍贵的文化使者。"],
+        ["They make the whole world know China.", "熊猫让全世界认识美丽的中国。"],
+        ["They say:", "它们好像在说："],
+        ["Hello, world!", "世界，你们好！"]
+      ]},
+      { title: "06 · My wish · 我的愿望", lines: [
+        ["And I want to say:", "而我也想说："],
+        ["Hello, world!", "世界，你们好！"],
+        ["I hope more people can know pandas.", "我希望有更多的人认识大熊猫。"],
+        ["I hope more people can know China.", "我也希望有更多的人了解中国。"],
+        ["I am proud of our lovely pandas.", "我为可爱的大熊猫感到骄傲。"],
+        ["I am proud of great China.", "我为伟大的祖国感到骄傲。"],
+        ["Thank you, everyone!", "谢谢大家！"]
+      ]}
+    ];
+
+    const lines = sections.flatMap(section => section.lines);
+    const lesson = document.getElementById("lesson");
+    const voiceSelect = document.getElementById("voiceSelect");
+    const speedRange = document.getElementById("speedRange");
+    const speedValue = document.getElementById("speedValue");
+    const playButton = document.getElementById("playButton");
+    const playLabel = document.getElementById("playLabel");
+    const nowEnglish = document.getElementById("nowEnglish");
+    const nowChinese = document.getElementById("nowChinese");
+    const progressText = document.getElementById("progressText");
+    const progressFill = document.getElementById("progressFill");
+    const toast = document.getElementById("toast");
+
+    const state = {
+      page: 0,
+      current: 0,
+      active: -1,
+      accent: "en-US",
+      playingAll: false,
+      paused: false,
+      voices: [],
+      completed: new Set(),
+      utterance: null
+    };
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
+    }
+
+    function tokenize(text) {
+      const parts = text.match(/[A-Za-z]+(?:'[A-Za-z]+)?|[^A-Za-z]+/g) || [];
+      return parts.map((part, index) => /^[A-Za-z]/.test(part)
+        ? `<button type="button" class="word" data-word="${escapeHtml(part)}" data-token="${index}" aria-label="朗读单词 ${escapeHtml(part)}">${escapeHtml(part)}</button>`
+        : `<span class="punct">${escapeHtml(part)}</span>`).join("");
+    }
+
+    function renderLesson() {
+      const section = sections[state.page];
+      const startIndex = sections.slice(0, state.page).reduce((total, item) => total + item.lines.length, 0);
+      const cards = section.lines.map(([english, chinese], offset) => {
+          const index = startIndex + offset;
+          return `<div class="sentence" data-index="${index}" role="button" tabindex="0" aria-label="朗读：${escapeHtml(english)}">
+            <div class="english">${tokenize(english)}</div>
+            <div class="chinese">${escapeHtml(chinese)}</div>
+            <span class="line-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9.5a4 4 0 0 1 0 5"/><path d="M18 7a7 7 0 0 1 0 10"/></svg></span>
+          </div>`;
+      }).join("");
+      lesson.innerHTML = `<nav class="lesson-nav" aria-label="课文翻页">
+        <button type="button" data-page-action="previous" ${state.page === 0 ? "disabled" : ""}>上一页</button>
+        <div class="page-indicator">第 ${state.page + 1} / ${sections.length} 页<small>${escapeHtml(section.title)}</small></div>
+        <button type="button" data-page-action="next" ${state.page === sections.length - 1 ? "disabled" : ""}>下一页</button>
+      </nav>
+      <section class="section"><h2 class="section-title">${escapeHtml(section.title)}</h2><div class="sentence-list">${cards}</div></section>`;
+      progressText.textContent = `${state.completed.size} / ${lines.length} 句`;
+      state.active = -1;
+    }
+
+    function pageForLine(index) {
+      let offset = 0;
+      for (let page = 0; page < sections.length; page += 1) {
+        offset += sections[page].lines.length;
+        if (index < offset) return page;
+      }
+      return sections.length - 1;
+    }
+
+    function firstLineOnPage(page) {
+      return sections.slice(0, page).reduce((total, item) => total + item.lines.length, 0);
+    }
+
+    function goToPage(page) {
+      const nextPage = Math.max(0, Math.min(sections.length - 1, page));
+      if (nextPage === state.page) return;
+      resetPlayback(false);
+      state.page = nextPage;
+      state.current = firstLineOnPage(nextPage);
+      renderLesson();
+      nowEnglish.textContent = "点一句，开始朗读";
+      nowChinese.textContent = "也可以直接点英文单词";
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function loadVoices() {
+      if (!("speechSynthesis" in window)) {
+        voiceSelect.innerHTML = "<option>此浏览器不支持系统语音</option>";
+        return;
+      }
+      state.voices = speechSynthesis.getVoices().filter(voice => /^en[-_]/i.test(voice.lang));
+      const preferred = state.voices.filter(v => v.lang.replace("_", "-").startsWith(state.accent));
+      const rest = state.voices.filter(v => !preferred.includes(v));
+      const sorted = [...preferred, ...rest].sort((a, b) => voiceScore(b) - voiceScore(a));
+      voiceSelect.innerHTML = sorted.length
+        ? sorted.map((voice, index) => `<option value="${escapeHtml(voice.name)}" ${index === 0 ? "selected" : ""}>${escapeHtml(voice.name)} · ${escapeHtml(voice.lang)}</option>`).join("")
+        : "<option>使用浏览器默认英语语音</option>";
+    }
+
+    function voiceScore(voice) {
+      const name = voice.name.toLowerCase();
+      let score = voice.lang.replace("_", "-").startsWith(state.accent) ? 20 : 0;
+      if (/natural|neural|premium|enhanced/.test(name)) score += 12;
+      if (/microsoft|google|samantha|daniel|siri/.test(name)) score += 5;
+      if (voice.localService) score += 2;
+      return score;
+    }
+
+    function selectedVoice() {
+      return state.voices.find(voice => voice.name === voiceSelect.value)
+        || state.voices.find(voice => voice.lang.replace("_", "-").startsWith(state.accent));
+    }
+
+    function clearWordHighlight() {
+      document.querySelectorAll(".word.speaking").forEach(element => element.classList.remove("speaking"));
+    }
+
+    function markActive(index, scroll = false) {
+      document.querySelectorAll(".sentence.active").forEach(element => element.classList.remove("active"));
+      const card = document.querySelector(`.sentence[data-index="${index}"]`);
+      if (!card) return;
+      card.classList.add("active");
+      state.active = index;
+      state.current = index;
+      nowEnglish.textContent = lines[index][0];
+      nowChinese.textContent = lines[index][1];
+      if (scroll) card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function markComplete(index) {
+      state.completed.add(index);
+      document.querySelector(`.sentence[data-index="${index}"]`)?.classList.add("done");
+      progressText.textContent = `${state.completed.size} / ${lines.length} 句`;
+      progressFill.style.width = `${state.completed.size / lines.length * 100}%`;
+    }
+
+    function resetPlayback(keepActive = true) {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+      state.utterance = null;
+      state.playingAll = false;
+      state.paused = false;
+      playLabel.textContent = "全文播放";
+      clearWordHighlight();
+      if (!keepActive) {
+        document.querySelectorAll(".sentence.active").forEach(element => element.classList.remove("active"));
+        state.active = -1;
+      }
+    }
+
+    function boundaryHighlight(event, index) {
+      clearWordHighlight();
+      const textBefore = lines[index][0].slice(0, event.charIndex);
+      const ordinal = (textBefore.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || []).length;
+      const words = document.querySelectorAll(`.sentence[data-index="${index}"] .word`);
+      words[Math.min(ordinal, words.length - 1)]?.classList.add("speaking");
+    }
+
+    function speakBrowser(text, options = {}) {
+      if (!("speechSynthesis" in window)) {
+        showToast("当前浏览器不支持语音，请使用 Chrome、Edge 或 Safari");
+        return;
+      }
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      state.utterance = utterance;
+      utterance.lang = state.accent;
+      utterance.rate = Number(speedRange.value);
+      utterance.pitch = 1;
+      const voice = selectedVoice();
+      if (voice) utterance.voice = voice;
+      utterance.onboundary = event => {
+        if (options.index != null && (event.name === "word" || event.charLength)) boundaryHighlight(event, options.index);
+      };
+      utterance.onend = () => {
+        clearWordHighlight();
+        state.utterance = null;
+        options.onEnd?.();
+      };
+      utterance.onerror = event => {
+        if (event.error !== "canceled" && event.error !== "interrupted") showToast("语音播放失败，请换一个系统语音");
+      };
+      speechSynthesis.speak(utterance);
+    }
+
+    function speakText(text, options = {}) {
+      speakBrowser(text, options);
+    }
+
+    function speakLine(index, continueAfter = false) {
+      resetPlayback();
+      const targetPage = pageForLine(index);
+      if (targetPage !== state.page) {
+        state.page = targetPage;
+        renderLesson();
+      }
+      state.playingAll = continueAfter;
+      playLabel.textContent = continueAfter ? "播放中" : "全文播放";
+      markActive(index, continueAfter);
+      speakText(lines[index][0], {
+        index,
+        onEnd: () => {
+          markComplete(index);
+          if (continueAfter && index < lines.length - 1) {
+            state.playingAll = true;
+            setTimeout(() => speakLine(index + 1, true), 180);
+          } else {
+            state.playingAll = false;
+            playLabel.textContent = "全文播放";
+          }
+        }
+      });
+    }
+
+    function togglePlayAll() {
+      if ("speechSynthesis" in window && speechSynthesis.speaking && !speechSynthesis.paused) {
+        speechSynthesis.pause();
+        state.paused = true;
+        playLabel.textContent = "继续播放";
+        return;
+      }
+      if ("speechSynthesis" in window && speechSynthesis.paused) {
+        speechSynthesis.resume();
+        state.paused = false;
+        playLabel.textContent = "播放中";
+        return;
+      }
+      const start = state.active >= 0 && state.active < lines.length - 1 ? state.active : 0;
+      speakLine(start, true);
+    }
+
+    lesson.addEventListener("click", event => {
+      const pageButton = event.target.closest("button[data-page-action]");
+      if (pageButton) {
+        goToPage(state.page + (pageButton.dataset.pageAction === "next" ? 1 : -1));
+        return;
+      }
+      const word = event.target.closest(".word");
+      const sentence = event.target.closest(".sentence");
+      if (!sentence) return;
+      const index = Number(sentence.dataset.index);
+      if (word) {
+        event.stopPropagation();
+        resetPlayback();
+        markActive(index);
+        clearWordHighlight();
+        word.classList.add("speaking");
+        speakText(word.dataset.word, { onEnd: clearWordHighlight });
+      } else {
+        speakLine(index, false);
+      }
+    });
+
+    lesson.addEventListener("keydown", event => {
+      const sentence = event.target.closest(".sentence");
+      if (sentence && event.target === sentence && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        speakLine(Number(sentence.dataset.index), false);
+      }
+    });
+
+    playButton.addEventListener("click", togglePlayAll);
+    document.getElementById("stopButton").addEventListener("click", () => resetPlayback());
+    document.getElementById("previousButton").addEventListener("click", () => speakLine(Math.max(0, state.current - 1), false));
+    document.getElementById("nextButton").addEventListener("click", () => speakLine(Math.min(lines.length - 1, state.current + 1), false));
+
+    speedRange.addEventListener("input", () => { speedValue.textContent = `${Number(speedRange.value).toFixed(2).replace(/0$/, "")}×`; });
+    document.getElementById("translationToggle").addEventListener("change", event => lesson.classList.toggle("hide-chinese", !event.target.checked));
+
+    document.getElementById("accentControl").addEventListener("click", event => {
+      const button = event.target.closest("button[data-accent]");
+      if (!button) return;
+      state.accent = button.dataset.accent;
+      document.querySelectorAll("[data-accent]").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+      loadVoices();
+    });
+
+    document.addEventListener("visibilitychange", () => { if (document.hidden) resetPlayback(); });
+    window.addEventListener("beforeunload", () => resetPlayback());
+    if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = loadVoices;
+
+    renderLesson();
+    loadVoices();
+  </script>
+</body>
+</html>
