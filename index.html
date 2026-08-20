@@ -352,6 +352,13 @@
             <label class="field-label" for="voiceSelect">英语发音</label>
             <select id="voiceSelect" aria-label="选择英语发音"><option>正在读取系统语音…</option></select>
           </div>
+          <div class="field wide">
+            <span class="field-label">声音来源</span>
+            <div class="segmented" id="providerControl">
+              <button type="button" data-provider="browser" aria-pressed="true">系统语音</button>
+              <button type="button" data-provider="baidu" aria-pressed="false">在线语音（百度）</button>
+            </div>
+          </div>
           <div class="field">
             <span class="field-label">口音</span>
             <div class="segmented" id="accentControl">
@@ -453,17 +460,25 @@
     const progressText = document.getElementById("progressText");
     const progressFill = document.getElementById("progressFill");
     const toast = document.getElementById("toast");
+    const providerControl = document.getElementById("providerControl");
+
+    function isAppleMobile() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
 
     const state = {
       page: 0,
       current: 0,
       active: -1,
       accent: "en-US",
+      provider: isAppleMobile() ? "baidu" : "browser",
       playingAll: false,
       paused: false,
       voices: [],
       completed: new Set(),
-      utterance: null
+      utterance: null,
+      audio: null
     };
 
     function escapeHtml(value) {
@@ -561,6 +576,12 @@
       document.querySelectorAll(".word.speaking").forEach(element => element.classList.remove("speaking"));
     }
 
+    function updateProviderControl() {
+      providerControl.querySelectorAll("[data-provider]").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.provider === state.provider));
+      });
+    }
+
     function markActive(index, scroll = false) {
       document.querySelectorAll(".sentence.active").forEach(element => element.classList.remove("active"));
       const card = document.querySelector(`.sentence[data-index="${index}"]`);
@@ -582,6 +603,10 @@
 
     function resetPlayback(keepActive = true) {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
+      if (state.audio) {
+        state.audio.pause();
+        state.audio.currentTime = 0;
+      }
       state.utterance = null;
       state.playingAll = false;
       state.paused = false;
@@ -628,8 +653,39 @@
       speechSynthesis.speak(utterance);
     }
 
+    function onlineAudioUrl(text) {
+      const speed = Math.max(1, Math.min(9, Math.round(5 / Number(speedRange.value))));
+      return `https://fanyi.baidu.com/gettts?lan=en&text=${encodeURIComponent(text)}&spd=${speed}&source=web`;
+    }
+
+    function speakOnline(text, options = {}) {
+      if (!("Audio" in window)) {
+        showToast("当前浏览器不支持在线音频");
+        return;
+      }
+      const audio = state.audio || new Audio();
+      state.audio = audio;
+      audio.onended = () => {
+        clearWordHighlight();
+        options.onEnd?.();
+      };
+      audio.onerror = () => {
+        if (state.provider === "baidu") {
+          showToast("在线语音加载失败，正在尝试系统语音");
+          if ("speechSynthesis" in window) speakBrowser(text, options);
+          else showToast("请检查网络，或在系统中安装英语语音");
+        }
+      };
+      audio.src = onlineAudioUrl(text);
+      audio.load();
+      audio.play().catch(() => {
+        showToast("在线语音需要网络，请再次点击句子");
+      });
+    }
+
     function speakText(text, options = {}) {
-      speakBrowser(text, options);
+      if (state.provider === "baidu") speakOnline(text, options);
+      else speakBrowser(text, options);
     }
 
     function speakLine(index, continueAfter = false) {
@@ -658,6 +714,19 @@
     }
 
     function togglePlayAll() {
+      if (state.audio && !state.audio.paused && !state.audio.ended) {
+        state.audio.pause();
+        state.paused = true;
+        playLabel.textContent = "继续播放";
+        return;
+      }
+      if (state.audio && state.paused) {
+        state.audio.play().then(() => {
+          state.paused = false;
+          playLabel.textContent = "播放中";
+        }).catch(() => showToast("请再次点击继续播放"));
+        return;
+      }
       if ("speechSynthesis" in window && speechSynthesis.speaking && !speechSynthesis.paused) {
         speechSynthesis.pause();
         state.paused = true;
@@ -720,12 +789,21 @@
       loadVoices();
     });
 
+    providerControl.addEventListener("click", event => {
+      const button = event.target.closest("button[data-provider]");
+      if (!button) return;
+      resetPlayback();
+      state.provider = button.dataset.provider;
+      updateProviderControl();
+    });
+
     document.addEventListener("visibilitychange", () => { if (document.hidden) resetPlayback(); });
     window.addEventListener("beforeunload", () => resetPlayback());
     if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = loadVoices;
 
     renderLesson();
     loadVoices();
+    updateProviderControl();
   </script>
 </body>
 </html>
